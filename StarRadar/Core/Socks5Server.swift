@@ -185,9 +185,10 @@ final class Socks5Server {
     /// 循环读一块转一块；对端关闭/异常时返回。
     private func pumpLoop(_ from: Int32, _ to: Int32, onChunk: ([UInt8]) -> Void) {
         var buf = [UInt8](repeating: 0, count: 16384)
+        let cap = buf.count
         while true {
             let n = buf.withUnsafeMutableBytes { p in
-                Darwin.read(from, p.baseAddress, buf.count)
+                Darwin.read(from, p.baseAddress, cap)
             }
             if n < 0 {
                 if errno == EINTR { continue }
@@ -292,13 +293,14 @@ final class Socks5Server {
 
         private func run() {
             var buf = [UInt8](repeating: 0, count: 65535)
+            let cap = buf.count
             while !isClosed() {
                 var from = sockaddr_in()
                 var flen = socklen_t(MemoryLayout<sockaddr_in>.size)
                 let n = buf.withUnsafeMutableBytes { p -> Int in
                     withUnsafeMutablePointer(to: &from) {
                         $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
-                            Darwin.recvfrom(server, p.baseAddress, buf.count, 0, sa, &flen)
+                            Darwin.recvfrom(server, p.baseAddress, cap, 0, sa, &flen)
                         }
                     }
                 }
@@ -369,13 +371,14 @@ final class Socks5Server {
             let t = Thread { [weak self] in
                 guard let self else { return }
                 var buf = [UInt8](repeating: 0, count: 65535)
+                let cap = buf.count
                 while !self.isClosed() {
                     var from = sockaddr_in()
                     var flen = socklen_t(MemoryLayout<sockaddr_in>.size)
                     let n = buf.withUnsafeMutableBytes { p -> Int in
                         withUnsafeMutablePointer(to: &from) {
                             $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { sa in
-                                Darwin.recvfrom(fd, p.baseAddress, buf.count, 0, sa, &flen)
+                                Darwin.recvfrom(fd, p.baseAddress, cap, 0, sa, &flen)
                             }
                         }
                     }
