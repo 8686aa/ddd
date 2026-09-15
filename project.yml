@@ -11,24 +11,6 @@ settings:
     SWIFT_VERSION: "5.0"
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     SWIFT_STRICT_CONCURRENCY: minimal
-  configs:
-    # 加固（防反编译）：Swift 本身已是机器码，这里做能做的两件事——
-    # 1) 全程优化 + 整模块编译，让产物更难看懂；2) 彻底去掉符号表/局部符号/调试信息。
-    Release:
-      SWIFT_OPTIMIZATION_LEVEL: "-Osize"
-      SWIFT_COMPILATION_MODE: wholemodule
-      SWIFT_EMIT_LOC_STRINGS: NO
-      GCC_OPTIMIZATION_LEVEL: s
-      STRIP_INSTALLED_PRODUCT: YES
-      STRIP_SWIFT_SYMBOLS: YES
-      DEPLOYMENT_POSTPROCESSING: YES
-      COPY_PHASE_STRIP: YES
-      GCC_SYMBOLS_PRIVATE_EXTERN: YES
-      DEAD_CODE_STRIPPING: YES
-      ENABLE_NS_ASSERTIONS: NO
-      MTL_ENABLE_DEBUG_INFO: NO
-      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
-      VALIDATE_PRODUCT: YES
 
 targets:
   StarRadar:
