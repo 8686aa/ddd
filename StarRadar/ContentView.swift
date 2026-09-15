@@ -496,6 +496,7 @@ struct ContentView: View {
         g.roomKey = key
         g.saveConfig()
         SniffEngine.shared.startListening(port: port, roomKey: key)
+        RadarRouter.shared.open()   // 开始监听后自动跳到内置雷达页
     }
 
     private func stopListen() {
