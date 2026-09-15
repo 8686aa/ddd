@@ -1,0 +1,53 @@
+name: StarRadar
+options:
+  bundleIdPrefix: com.tzsp
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+    SWIFT_STRICT_CONCURRENCY: minimal
+
+targets:
+  StarRadar:
+    type: application
+    platform: iOS
+    sources:
+      - path: StarRadar
+        excludes:
+          - "Resources/Info.plist"
+    settings:
+      base:
+        PRODUCT_NAME: StarRadar
+        PRODUCT_BUNDLE_IDENTIFIER: com.tzsp.starradar
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: StarRadar/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: 星辰雷达
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        # 后台保活：切后台/关屏后继续跑 SOCKS5 采集与上报（对应安卓 WakeLock + 前台服务）
+        UIBackgroundModes:
+          - audio
+        NSLocalNetworkUsageDescription: 需要本地网络权限，供热点内的设备接入本机 SOCKS5 代理

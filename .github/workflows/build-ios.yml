@@ -1,0 +1,71 @@
+name: Build iOS (unsigned IPA)
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 环境信息
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: 安装 xcodegen
+        run: brew install xcodegen
+
+      - name: 由 project.yml 生成 Xcode 工程
+        run: xcodegen generate
+
+      # 不做签名：产物用于自签（AltStore / Sideloadly）或后续在 Mac 上重签
+      - name: 构建 Release archive（未签名）
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project StarRadar.xcodeproj \
+            -scheme StarRadar \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/StarRadar.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: 打包为未签名 IPA
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/StarRadar.xcarchive/Products/Applications/StarRadar.app"
+          test -d "$APP"
+          rm -rf "$RUNNER_TEMP/Payload"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/Payload/"
+          cd "$RUNNER_TEMP"
+          zip -qry StarRadar-unsigned.ipa Payload
+          ls -lh StarRadar-unsigned.ipa
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: StarRadar-unsigned-ipa
+          path: ${{ runner.temp }}/StarRadar-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 打 v* 标签时发布 Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/StarRadar-unsigned.ipa
+          body: 未签名 IPA，需自签（AltStore / Sideloadly）后安装。

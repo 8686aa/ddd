@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Xcode / 构建产物
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.xcarchive
+
+# xcodegen 生成物，不入库（CI 与本地均由 project.yml 生成）
+StarRadar.xcodeproj/
+StarRadar/Resources/Info.plist
+
+# SwiftPM
+.swiftpm/
+.build/
+Package.resolved
