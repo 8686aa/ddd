@@ -64,6 +64,13 @@ jobs:
           rm -rf "$RUNNER_TEMP/Payload"
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -R "$APP" "$RUNNER_TEMP/Payload/"
+
+          # 加固：把可执行文件里残留的局部符号与调试符号一并剥掉（产物未签名，剥符号后无需重签）
+          BIN="$RUNNER_TEMP/Payload/StarRadar.app/StarRadar"
+          echo "剥符号前 导出符号数: $(nm -gU "$BIN" 2>/dev/null | wc -l | tr -d ' ')  大小: $(stat -f%z "$BIN") 字节"
+          strip -S -x "$BIN" || true
+          echo "剥符号后 导出符号数: $(nm -gU "$BIN" 2>/dev/null | wc -l | tr -d ' ')  大小: $(stat -f%z "$BIN") 字节"
+
           cd "$RUNNER_TEMP"
           zip -qry StarRadar-unsigned.ipa Payload
           ls -lh StarRadar-unsigned.ipa
