@@ -48,12 +48,18 @@ final class FlowHub {
 
     func clientIps() -> [String] {
         lock.lock(); defer { lock.unlock() }
-        return aliveLocked(&clients, linger: clientLinger)
+        let now = Date()
+        let stale = clients.filter { now.timeIntervalSince($0.value) > clientLinger }.map { $0.key }
+        for k in stale { clients.removeValue(forKey: k) }
+        return clients.keys.sorted()
     }
 
     func remoteIps() -> [String] {
         lock.lock(); defer { lock.unlock() }
-        return aliveLocked(&remotes, linger: remoteLinger)
+        let now = Date()
+        let stale = remotes.filter { now.timeIntervalSince($0.value) > remoteLinger }.map { $0.key }
+        for k in stale { remotes.removeValue(forKey: k) }
+        return remotes.keys.sorted()
     }
 
     /// 取走最多 max 条待展示报文
@@ -71,13 +77,5 @@ final class FlowHub {
         clients.removeAll()
         remotes.removeAll()
         pending.removeAll()
-    }
-
-    /// 调用方须已持锁
-    private func aliveLocked(_ map: inout [String: Date], linger: TimeInterval) -> [String] {
-        let now = Date()
-        let stale = map.filter { now.timeIntervalSince($0.value) > linger }.map { $0.key }
-        for k in stale { map.removeValue(forKey: k) }
-        return map.keys.sorted()
     }
 }

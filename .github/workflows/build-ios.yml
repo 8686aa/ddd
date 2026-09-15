@@ -25,10 +25,14 @@ jobs:
         run: brew install xcodegen
 
       - name: 由 project.yml 生成 Xcode 工程
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          xcodebuild -list -project StarRadar.xcodeproj
 
       # 不做签名：产物用于自签（AltStore / Sideloadly）或后续在 Mac 上重签
       - name: 构建 Release archive（未签名）
+        id: build
+        continue-on-error: true
         run: |
           set -o pipefail
           xcodebuild \
@@ -41,7 +45,16 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            archive
+            archive 2>&1 | tee "$RUNNER_TEMP/xcodebuild.log"
+
+      # 把编译错误抛成 GitHub 注解，便于不开权限也能定位失败原因
+      - name: 提取编译错误
+        if: steps.build.outcome != 'success'
+        run: |
+          grep -n "error:" "$RUNNER_TEMP/xcodebuild.log" | head -n 40 | while IFS= read -r line; do
+            echo "::error::$line"
+          done
+          exit 1
 
       - name: 打包为未签名 IPA
         run: |
