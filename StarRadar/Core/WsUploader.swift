@@ -32,10 +32,12 @@ final class WsUploader {
         let data: String
         let gen: Int
         let seq: Int
-        init(data: String, gen: Int, seq: Int) {
+        let t: Date        // 入队时间：补包窗口（只补 10 秒内）判定用
+        init(data: String, gen: Int, seq: Int, t: Date) {
             self.data = data
             self.gen = gen
             self.seq = seq
+            self.t = t
         }
     }
 
