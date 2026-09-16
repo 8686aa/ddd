@@ -9,6 +9,7 @@ import Foundation
 ///   补包：发送**确认成功才出队**，失败整批留在队内，重连后按原序续发；
 ///        入队时记录连接代次 gen，重连后 gen 落后于当前代次的报文即为补包，
 ///        计入 resent；队首连续落后代次的报文数即待补发 replay。
+///        只补 10 秒内的包：入队超过 replayWindow 仍未确认的积压包直接丢弃，不再补发。
 ///   队列：超过 2 万条时丢弃最旧的（内存兜底）。
 ///   断线快速检测：① 接收回调即时感知 FIN/RST；② 单批 5s 发送确认超时；
 ///        ③ 空闲 15s 发一次应用层 ping，发送确认失败即判定链路异常。
@@ -83,6 +84,8 @@ final class WsUploader {
     private let idlePingMs: TimeInterval = 15
     private let reconnMin: TimeInterval = 1
     private let reconnMax: TimeInterval = 5
+    /// 补包窗口：只补最近 10 秒内的包，入队更久的积压直接丢弃
+    private let replayWindow: TimeInterval = 10
 
     init(url: String, apiKey: String,
          log: @escaping (Globals.Level, String) -> Void,
@@ -141,7 +144,7 @@ final class WsUploader {
         let b64 = Data(ipPacket).base64EncodedString()
         lock.lock(); defer { lock.unlock() }
         seqNo += 1
-        queue.append(Pending(data: b64, gen: genNo, seq: seqNo))
+        queue.append(Pending(data: b64, gen: genNo, seq: seqNo, t: Date()))
         while queue.count > queueLimit {
             queue.removeFirst()
             dropped += 1
@@ -294,12 +297,22 @@ final class WsUploader {
         }
     }
 
-    /// 取队首最多 batchMax 条（只窥视，不删除）
+    /// 取队首最多 batchMax 条（只窥视，不删除）；先剪掉超过补包窗口的过期包
     private func takeBatch() -> [Pending] {
         lock.lock(); defer { lock.unlock() }
+        dropExpiredLocked()
         guard !queue.isEmpty else { return [] }
         let n = min(batchMax, queue.count)
         return Array(queue[0..<n])
+    }
+
+    /// 补包窗口：只补最近 replayWindow 内的包；入队更久的积压直接丢弃（避免重连后大量补老包）
+    private func dropExpiredLocked() {
+        let now = Date()
+        while let head = queue.first, now.timeIntervalSince(head.t) > replayWindow {
+            queue.removeFirst()
+            dropped += 1
+        }
     }
 
     private func sendBatch(_ task: URLSessionWebSocketTask, _ batch: [Pending]) -> Bool {
